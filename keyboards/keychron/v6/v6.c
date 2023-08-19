@@ -78,7 +78,11 @@ bool rgb_matrix_indicators_advanced_kb(uint8_t led_min, uint8_t led_max) {
     // RGB_MATRIX_INDICATOR_SET_COLOR(index, red, green, blue);
 #    if defined(CAPS_LOCK_LED_INDEX)
     if (host_keyboard_led_state().caps_lock) {
+#   if defined(CAPS_LOCK_CUSTOM_LED_R) && defined(CAPS_LOCK_CUSTOM_LED_G) && defined(CAPS_LOCK_CUSTOM_LED_B)
+        RGB_MATRIX_INDICATOR_SET_COLOR(CAPS_LOCK_LED_INDEX, CAPS_LOCK_CUSTOM_LED_R, CAPS_LOCK_CUSTOM_LED_G, CAPS_LOCK_CUSTOM_LED_B);
+#   else
         RGB_MATRIX_INDICATOR_SET_COLOR(CAPS_LOCK_LED_INDEX, 255, 255, 255);
+#   endif
     } else {
         if (!rgb_matrix_get_flags()) {
             RGB_MATRIX_INDICATOR_SET_COLOR(CAPS_LOCK_LED_INDEX, 0, 0, 0);
@@ -87,7 +91,11 @@ bool rgb_matrix_indicators_advanced_kb(uint8_t led_min, uint8_t led_max) {
 #    endif // CAPS_LOCK_LED_INDEX
 #    if defined(NUM_LOCK_LED_INDEX)
     if (host_keyboard_led_state().num_lock) {
+#   if defined(NUM_LOCK_CUSTOM_LED_R) && defined(NUM_LOCK_CUSTOM_LED_G) && defined(NUM_LOCK_CUSTOM_LED_B)
+        RGB_MATRIX_INDICATOR_SET_COLOR(NUM_LOCK_LED_INDEX, NUM_LOCK_CUSTOM_LED_R, NUM_LOCK_CUSTOM_LED_G, NUM_LOCK_CUSTOM_LED_B);
+#   else
         RGB_MATRIX_INDICATOR_SET_COLOR(NUM_LOCK_LED_INDEX, 255, 255, 255);
+#   endif
     } else {
         if (!rgb_matrix_get_flags()) {
             RGB_MATRIX_INDICATOR_SET_COLOR(NUM_LOCK_LED_INDEX, 0, 0, 0);
