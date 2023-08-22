@@ -28,7 +28,7 @@ bool effect_runner_reactive_backlight(uint8_t start, effect_params_t* params, re
 
         uint8_t scaled_effect = scale8(qadd8(scale8(hsv.v, 255 - RCVMIN), RCVMIN), rgb_matrix_config.hsv.v);
 
-        hsv.s = qsub8(rgb_matrix_config.hsv.s, scale8(scale8(hsv.s, rgb_matrix_config.hsv.s), 40));
+        hsv.s = qsub8(rgb_matrix_config.hsv.s, scale8(scale8(hsv.s, rgb_matrix_config.hsv.s), 35));
         hsv.v   = scaled_effect;
 
         RGB rgb = rgb_matrix_hsv_to_rgb(hsv);
@@ -40,8 +40,8 @@ bool effect_runner_reactive_backlight(uint8_t start, effect_params_t* params, re
 static HSV WIDE_REACTIVE_BACKLIGHT_math(HSV hsv, int16_t dx, int16_t dy, uint8_t dist, uint16_t tick) {
     uint16_t effect = tick + dist * 5;
     if (effect > 255) effect = 255;
-    hsv.s = qadd8(hsv.s, scale8(255 - effect, 50));
-    hsv.v = qadd8(hsv.v, scale8(255 - effect, 50));
+    hsv.s = qadd8(hsv.s, scale8(255 - effect, 150));
+    hsv.v = qadd8(hsv.v, scale8(255 - effect, 150));
     return hsv;
 }
 
