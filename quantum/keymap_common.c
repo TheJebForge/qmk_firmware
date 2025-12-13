@@ -29,10 +29,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #    include "encoder.h"
 #endif
 
-#ifdef DIP_SWITCH_MAP_ENABLE
-#    include "dip_switch.h"
-#endif
-
 #ifdef BACKLIGHT_ENABLE
 #    include "backlight.h"
 #endif
@@ -63,19 +59,22 @@ action_t action_for_keycode(uint16_t keycode) {
     (void)mod;
 
     switch (keycode) {
-        case BASIC_KEYCODE_RANGE:
-        case MODIFIER_KEYCODE_RANGE:
+        case KC_A ... KC_EXSEL:
+        case KC_LEFT_CTRL ... KC_RIGHT_GUI:
             action.code = ACTION_KEY(keycode);
             break;
 #ifdef EXTRAKEY_ENABLE
-        case SYSTEM_KEYCODE_RANGE:
+        case KC_SYSTEM_POWER ... KC_SYSTEM_WAKE:
             action.code = ACTION_USAGE_SYSTEM(KEYCODE2SYSTEM(keycode));
             break;
-        case CONSUMER_KEYCODE_RANGE:
+        case KC_AUDIO_MUTE ... KC_LAUNCHPAD:
             action.code = ACTION_USAGE_CONSUMER(KEYCODE2CONSUMER(keycode));
             break;
+        case KC_AIRPLANE_MODE:
+            action.code = ACTION_USAGE_RADIO;
+            break;
 #endif
-        case MOUSE_KEYCODE_RANGE:
+        case KC_MS_UP ... KC_MS_ACCEL2:
             action.code = ACTION_MOUSEKEY(keycode);
             break;
         case KC_TRANSPARENT:
@@ -208,13 +207,5 @@ __attribute__((weak)) uint16_t keymap_key_to_keycode(uint8_t layer, keypos_t key
         return keycode_at_encodermap_location(layer, key.col, false);
     }
 #endif // ENCODER_MAP_ENABLE
-#ifdef DIP_SWITCH_MAP_ENABLE
-    else if (key.row == KEYLOC_DIP_SWITCH_ON && key.col < NUM_DIP_SWITCHES) {
-        return keycode_at_dip_switch_map_location(key.col, true);
-    } else if (key.row == KEYLOC_DIP_SWITCH_OFF && key.col < NUM_DIP_SWITCHES) {
-        return keycode_at_dip_switch_map_location(key.col, false);
-    }
-#endif // DIP_SWITCH_MAP_ENABLE
-
     return KC_NO;
 }

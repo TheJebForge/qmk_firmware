@@ -6,6 +6,8 @@
 #include "os_detection.h"
 #include "../lib/lib8tion/lib8tion.h"
 
+bool is_suspended = false;
+
 void keyboard_post_init_kb(void) {
   keyboard_post_init_user();
 
@@ -46,6 +48,8 @@ void keyboard_pre_init_kb(void) {
 void suspend_power_down_kb(void) {
   suspend_power_down_user();
 
+  is_suspended = true;
+
 #ifdef RGB_MATRIX_ENABLE
 #  ifndef NO_SUSPEND_POWER_DOWN
   writePinLow(IS31FL3743A_ENABLE_GPIO);
@@ -58,6 +62,8 @@ void suspend_power_down_kb(void) {
  */
 void suspend_wakeup_init_kb(void) {
   suspend_wakeup_init_user();
+
+  is_suspended = false;
 
 #ifdef RGB_MATRIX_ENABLE
 #  ifndef NO_SUSPEND_POWER_DOWN
@@ -303,6 +309,19 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         register_code(KC_P);
       } else {
         unregister_code(KC_P);
+        unregister_code(KC_LGUI);
+      }
+      return false; // Skip all further processing of this key
+    // Copilot key
+    // Simulate press WIN+SHIFT+F23
+    case KC_CPLT:
+      if (record->event.pressed) {
+        register_code(KC_LGUI);
+        register_code(KC_LSFT);
+        register_code(KC_F23);
+      } else {
+        unregister_code(KC_F23);
+        unregister_code(KC_LSFT);
         unregister_code(KC_LGUI);
       }
       return false; // Skip all further processing of this key

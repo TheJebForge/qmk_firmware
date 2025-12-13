@@ -39,7 +39,7 @@ typedef union {
     struct {
         bool    enable : 1;
         bool    breathing : 1;
-        bool    valid : 1;
+        uint8_t reserved : 1; // Reserved for possible future backlight modes
         uint8_t level : 5;
     };
 } backlight_config_t;
@@ -49,6 +49,7 @@ _Static_assert(sizeof(backlight_config_t) == sizeof(uint8_t), "Backlight EECONFI
 void    backlight_init(void);
 void    backlight_toggle(void);
 void    backlight_enable(void);
+void    backlight_enable_old_level(void);
 void    backlight_disable(void);
 bool    is_backlight_enabled(void);
 void    backlight_step(void);

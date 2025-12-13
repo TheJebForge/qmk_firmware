@@ -97,6 +97,7 @@ typedef struct {
     USB_Descriptor_Interface_t Console_Interface;
     USB_HID_Descriptor_HID_t   Console_HID;
     USB_Descriptor_Endpoint_t  Console_INEndpoint;
+    USB_Descriptor_Endpoint_t  Console_OUTEndpoint;
 #endif
 
 #ifdef MIDI_ENABLE
@@ -196,8 +197,6 @@ enum usb_interfaces {
     TOTAL_INTERFACES
 };
 
-#define IS_VALID_INTERFACE(i) ((i) >= 0 && (i) < TOTAL_INTERFACES)
-
 #define NEXT_EPNUM __COUNTER__
 
 /*
@@ -233,6 +232,19 @@ enum usb_endpoints {
 
 #ifdef CONSOLE_ENABLE
     CONSOLE_IN_EPNUM = NEXT_EPNUM,
+
+#    ifdef PROTOCOL_CHIBIOS
+// ChibiOS has enough memory and descriptor to actually enable the endpoint
+// It could use the same endpoint numbers, as that's supported by ChibiOS
+// But the QMK code currently assumes that the endpoint numbers are different
+#        ifdef USB_ENDPOINTS_ARE_REORDERABLE
+#            define CONSOLE_OUT_EPNUM CONSOLE_IN_EPNUM
+#        else
+    CONSOLE_OUT_EPNUM = NEXT_EPNUM,
+#        endif
+#    else
+#        define CONSOLE_OUT_EPNUM CONSOLE_IN_EPNUM
+#    endif
 #endif
 
 #ifdef MIDI_ENABLE
@@ -287,7 +299,7 @@ enum usb_endpoints {
 
 #define KEYBOARD_EPSIZE 8
 #define SHARED_EPSIZE 32
-#define MOUSE_EPSIZE 16
+#define MOUSE_EPSIZE 8
 #define RAW_EPSIZE 32
 #define CONSOLE_EPSIZE 32
 #define MIDI_STREAM_EPSIZE 64
@@ -297,3 +309,103 @@ enum usb_endpoints {
 #define DIGITIZER_EPSIZE 8
 
 uint16_t get_usb_descriptor(const uint16_t wValue, const uint16_t wIndex, const uint16_t wLength, const void** const DescriptorAddress);
+
+
+// Defining the types that LUFA doesn't
+enum USB_DescriptorTypes_tmk_t
+{
+    DTYPE_Otg                       = 0x09,
+    DTYPE_Debug                     = 0x0A,
+    DTYPE_Bos                       = 0x0F, /**< Indicates that the descriptor is a binary object store descriptor. */
+    DTYPE_DeviceCapability          = 0x10, /**< Indicates that the descriptor is a device capability descriptor. */
+};
+
+
+// Generic device capability descriptor
+typedef struct
+{
+    USB_Descriptor_Header_t Header; /**< Descriptor header, including type and size. */
+
+    uint8_t DevCapabilityType; /**< TODO
+                                */
+    uint8_t  Bytes[]; /**< Capability-specific format
+                        */
+} ATTR_PACKED USB_Descriptor_Capability_t;
+
+// USB 2.0 Extended device capability descriptor
+typedef struct
+{
+    USB_Descriptor_Header_t Header; /**< Descriptor header, including type and size. */
+
+    uint8_t DevCapabilityType; /**< TODO
+                                */
+    uint8_t Bytes[4]; /**< Capability-specific format
+                        */
+} ATTR_PACKED USB_Descriptor_Capability_Usb20Ext_t;
+
+
+// Microsoft OS 2.0 Platform Capability Descriptor Set
+typedef struct
+{
+    uint8_t  WindowsVersion[4]; /**< TODO
+                                */
+    uint16_t TotalLength; /**< Total Length of the descriptor set
+                           */
+    uint8_t  VendorCode; /**< 0x01 for Microsoft
+                          */
+    uint8_t  AltEnumCode; /**< 0 by default. non-zero if device supports non-default USB descriptors
+                          */
+} ATTR_PACKED USB_Descriptor_Capability_Msos_Set_t;
+
+// Microsoft OS 2.0 Platform Capability Descriptor Header
+typedef struct
+{
+    USB_Descriptor_Header_t Header; /**< Descriptor header, including type and size. */
+
+    uint8_t  DevCapabilityType; /**< 0x05
+                                */
+    uint8_t  Reserved; /**< Reserved, set as 0
+                        */
+    uint8_t  PlatformCapabilityId[16]; /**< GUID: D8DD60DF-4589-4CC7-9CD2-659D9E648A9F
+                                        */
+    USB_Descriptor_Capability_Msos_Set_t Set[1]; /**< Descriptor Set. Can have multiple in theory.
+                                                  */
+} ATTR_PACKED USB_Descriptor_Capability_Msos_t;
+
+/** \brief Standard USB BOS Descriptor (LUFA naming conventions).
+    *
+    *  Type define for a standard BOS Descriptor. This structure uses LUFA-specific element names
+    *  to make each element's purpose clearer.
+    *
+    *  \note Regardless of CPU architecture, these values should be stored as little endian.
+    */
+typedef struct
+{
+    USB_Descriptor_Header_t Header; /**< Descriptor header, including type and size. */
+
+    uint16_t TotalLength; /**< Length of this descriptor and all its sub descriptors.
+                            */
+    uint8_t  NumDeviceCaps; /**< The number of separate device capability descriptors in the BOS.
+                                */
+    USB_Descriptor_Capability_Usb20Ext_t Usb20ExtensionDevCap;
+    USB_Descriptor_Capability_Msos_t MsosCap;
+} ATTR_PACKED USB_Descriptor_Bos_t;
+
+/** \brief Standard USB BOS Descriptor (USB-IF naming conventions).
+    *
+    *  Type define for a standard BOS Descriptor. This structure uses the relevant standard's given
+    *  element names to ensure compatibility with the standard.
+    *
+    *  \note Regardless of CPU architecture, these values should be stored as little endian.
+    */
+typedef struct
+{
+    uint8_t  bLength; /**< Size of the descriptor, in bytes. */
+    uint8_t  bDescriptorType; /**< Type of the descriptor, either a value in \ref USB_DescriptorTypes_t or a
+                                *   value given by the specific class.
+                                */
+    uint16_t wTotalLength; /**< Length of this descriptor and all its sub descriptors.
+                            */
+    uint8_t  bNumDeviceCaps; /**< The number of separate device capability descriptors in the BOS.
+                                */
+} ATTR_PACKED USB_StdDescriptor_Bos_t;

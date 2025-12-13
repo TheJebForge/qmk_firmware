@@ -41,6 +41,8 @@
 #include "usb_descriptor.h"
 #include "usb_descriptor_common.h"
 
+#include "dyn_serial.h"
+
 #ifdef JOYSTICK_ENABLE
 #    include "joystick.h"
 #endif
@@ -93,8 +95,6 @@ const USB_Descriptor_HIDReport_Datatype_t PROGMEM KeyboardReport[] = {
         HID_RI_USAGE_PAGE(8, 0x08),    // LED
         HID_RI_USAGE_MINIMUM(8, 0x01), // Num Lock
         HID_RI_USAGE_MAXIMUM(8, 0x05), // Kana
-        HID_RI_LOGICAL_MINIMUM(8, 0x00),
-        HID_RI_LOGICAL_MAXIMUM(8, 0x01),
         HID_RI_REPORT_COUNT(8, 0x05),
         HID_RI_REPORT_SIZE(8, 0x01),
         HID_RI_OUTPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE | HID_IOF_NON_VOLATILE),
@@ -321,6 +321,20 @@ const USB_Descriptor_HIDReport_Datatype_t PROGMEM SharedReport[] = {
         HID_RI_REPORT_SIZE(8, 16),
         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_ARRAY | HID_IOF_ABSOLUTE),
     HID_RI_END_COLLECTION(0),
+
+    HID_RI_USAGE_PAGE(8, 0x01),           // Generic Desktop
+    HID_RI_USAGE(8, 0x0C),                // Wireless Radio Controls
+    HID_RI_COLLECTION(8, 0x01),           // Application
+        HID_RI_REPORT_ID(8, REPORT_ID_RADIO),
+        HID_RI_LOGICAL_MINIMUM(8, 0x00),
+        HID_RI_LOGICAL_MAXIMUM(8, 0x01),
+        HID_RI_USAGE(8, 0xC6),            // Wireless Radio Button
+        HID_RI_REPORT_COUNT(8, 1),
+        HID_RI_REPORT_SIZE(8, 1),
+        HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_RELATIVE),
+        HID_RI_REPORT_SIZE(8, 7),
+        HID_RI_INPUT(8, HID_IOF_CONSTANT | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
+    HID_RI_END_COLLECTION(0),
 #endif
 
 #ifdef PROGRAMMABLE_BUTTON_ENABLE
@@ -359,10 +373,10 @@ const USB_Descriptor_HIDReport_Datatype_t PROGMEM SharedReport[] = {
         // Keycodes
         HID_RI_USAGE_PAGE(8, 0x07),    // Keyboard/Keypad
         HID_RI_USAGE_MINIMUM(8, 0x00),
-        HID_RI_USAGE_MAXIMUM(8, NKRO_REPORT_BITS * 8 - 1),
+        HID_RI_USAGE_MAXIMUM(8, KEYBOARD_REPORT_BITS * 8 - 1),
         HID_RI_LOGICAL_MINIMUM(8, 0x00),
         HID_RI_LOGICAL_MAXIMUM(8, 0x01),
-        HID_RI_REPORT_COUNT(8, NKRO_REPORT_BITS * 8),
+        HID_RI_REPORT_COUNT(8, KEYBOARD_REPORT_BITS * 8),
         HID_RI_REPORT_SIZE(8, 0x01),
         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
 
@@ -420,6 +434,14 @@ const USB_Descriptor_HIDReport_Datatype_t PROGMEM ConsoleReport[] = {
         HID_RI_REPORT_COUNT(8, CONSOLE_EPSIZE),
         HID_RI_REPORT_SIZE(8, 0x08),
         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
+
+        // Data from host
+        HID_RI_USAGE(8, 0x76),     // Vendor Defined
+        HID_RI_LOGICAL_MINIMUM(8, 0x00),
+        HID_RI_LOGICAL_MAXIMUM(16, 0x00FF),
+        HID_RI_REPORT_COUNT(8, CONSOLE_EPSIZE),
+        HID_RI_REPORT_SIZE(8, 0x08),
+        HID_RI_OUTPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE | HID_IOF_NON_VOLATILE),
     HID_RI_END_COLLECTION(0),
 };
 #endif
@@ -432,7 +454,8 @@ const USB_Descriptor_Device_t PROGMEM DeviceDescriptor = {
         .Size                   = sizeof(USB_Descriptor_Device_t),
         .Type                   = DTYPE_Device
     },
-    .USBSpecification           = VERSION_BCD(2, 0, 0),
+    // Needs to be 2.0.1 or 2.1.0 to advertise BOS descriptor
+    .USBSpecification           = VERSION_BCD(2, 1, 0),
 
 #if VIRTSER_ENABLE
     .Class                      = USB_CSCP_IADDeviceClass,
@@ -457,6 +480,64 @@ const USB_Descriptor_Device_t PROGMEM DeviceDescriptor = {
     .SerialNumStrIndex          = 0x00,
 #endif
     .NumberOfConfigurations     = FIXED_NUM_CONFIGURATIONS
+};
+
+/*
+ * BOS descriptor
+ */
+const USB_Descriptor_Bos_t PROGMEM BosDescriptor = {
+    // 2 Bytes
+    .Header = {
+        .Size                   = 0x05,
+        .Type                   = DTYPE_Bos
+    },
+    // 3 Bytes (=> 5 Bytes)
+    // Value must be header + each cap
+#if defined(MSOS2_CAP)
+    .TotalLength                = 0x0028,
+    .NumDeviceCaps              = 0x02,
+#else
+    .TotalLength                = 0x000C,
+    .NumDeviceCaps              = 0x01,
+#endif
+
+    .Usb20ExtensionDevCap       = {
+        // 2 Bytes (=> 7 Bytes)
+        .Header = {
+            .Size = 0x07,
+            .Type = 16,
+        },
+        // 5 Bytes (=> 12 Bytes / 0x0C Bytes)
+        .DevCapabilityType      = 2,
+        .Bytes                  = {0x00, 0x00, 0x00, 0x00},
+    },
+
+#ifdef MSOS2_CAP
+    // 28 Bytes (0x1C)
+    .MsosCap       = {
+        // 2 Bytes (=> 7 Bytes)
+        .Header = {
+            .Size = sizeof(USB_Descriptor_Capability_Msos_t),
+            .Type = 16,
+        },
+        // 5 Bytes (=> 12 Bytes / 0x0C Bytes)
+        .DevCapabilityType      = 5,
+        .Reserved               = 0,
+        // Microsoft OS 2.0 {D8DD60DF-4589-4CC7-9CD2-659D9E648A9F}
+        .PlatformCapabilityId   = {
+            0xDF, 0x60, 0xDD, 0xD8,
+            0x89, 0x45, 0xC7, 0x4C,
+            0x9C, 0xD2, 0x65, 0x9D,
+            0x9E, 0x64, 0x8A, 0x9F
+        },
+        .Set                    = {{
+            .WindowsVersion     = {0x00, 0x00, 0x03, 0x06}, // Windows Blue
+            .TotalLength        = 0x0048,
+            .VendorCode         = 0x01, // Microsoft
+            .AltEnumCode        = 0,
+        }},
+    },
+#endif
 };
 
 #ifndef USB_MAX_POWER_CONSUMPTION
@@ -669,7 +750,7 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor = {
         },
         .InterfaceNumber        = CONSOLE_INTERFACE,
         .AlternateSetting       = 0x00,
-        .TotalEndpoints         = 1,
+        .TotalEndpoints         = 2,
         .Class                  = HID_CSCP_HIDClass,
         .SubClass               = HID_CSCP_NonBootSubclass,
         .Protocol               = HID_CSCP_NonBootProtocol,
@@ -692,6 +773,16 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor = {
             .Type               = DTYPE_Endpoint
         },
         .EndpointAddress        = (ENDPOINT_DIR_IN | CONSOLE_IN_EPNUM),
+        .Attributes             = (EP_TYPE_INTERRUPT | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_DATA),
+        .EndpointSize           = CONSOLE_EPSIZE,
+        .PollingIntervalMS      = 0x01
+    },
+    .Console_OUTEndpoint = {
+        .Header = {
+            .Size               = sizeof(USB_Descriptor_Endpoint_t),
+            .Type               = DTYPE_Endpoint
+        },
+        .EndpointAddress        = (ENDPOINT_DIR_OUT | CONSOLE_OUT_EPNUM),
         .Attributes             = (EP_TYPE_INTERRUPT | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_DATA),
         .EndpointSize           = CONSOLE_EPSIZE,
         .PollingIntervalMS      = 0x01
@@ -990,7 +1081,7 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor = {
         .Attributes             = (EP_TYPE_INTERRUPT | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_DATA),
         .EndpointSize           = JOYSTICK_EPSIZE,
         .PollingIntervalMS      = USB_POLLING_INTERVAL_MS
-    },
+    }
 #endif
 
 #if defined(DIGITIZER_ENABLE) && !defined(DIGITIZER_SHARED_EP)
@@ -1061,16 +1152,6 @@ const USB_Descriptor_String_t PROGMEM ProductString = {
     .UnicodeString              = USBSTR(PRODUCT)
 };
 
-#if defined(SERIAL_NUMBER)
-const USB_Descriptor_String_t PROGMEM SerialNumberString = {
-    .Header = {
-        .Size                   = sizeof(USBSTR(SERIAL_NUMBER)),
-        .Type                   = DTYPE_String
-    },
-    .UnicodeString              = USBSTR(SERIAL_NUMBER)
-};
-#endif
-
 // clang-format on
 
 /**
@@ -1097,6 +1178,17 @@ uint16_t get_usb_descriptor(const uint16_t wValue, const uint16_t wIndex, const 
             Size    = sizeof(USB_Descriptor_Configuration_t);
 
             break;
+        case DTYPE_Bos:
+            Address = &BosDescriptor;
+            Size    = 5;
+            if (wLength >= sizeof(USB_Descriptor_Bos_t)) {
+                Size    = sizeof(USB_Descriptor_Bos_t);
+            }
+#ifdef OS_DETECTION_ENABLE
+            process_zoid(31);
+#endif
+
+            break;
         case DTYPE_String:
             switch (DescriptorIndex) {
                 case 0x00:
@@ -1116,8 +1208,10 @@ uint16_t get_usb_descriptor(const uint16_t wValue, const uint16_t wIndex, const 
                     break;
 #if defined(SERIAL_NUMBER)
                 case 0x03:
-                    Address = &SerialNumberString;
-                    Size    = pgm_read_byte(&SerialNumberString.Header.Size);
+                    // TODO: Give these functions a generic name and let anyone override it
+                    // Framework 16 uses this
+                    Address = dyn_serial_number_string();
+                    Size    = dyn_serial_number_string_len();
 
                     break;
 #endif

@@ -1,7 +1,6 @@
 // Copyright 2022 Marek Kraus (@gamelaster)
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "gpio.h"
 #include "hardware/pio.h"
 #include "hardware/clocks.h"
 #include "ps2.h"
@@ -22,7 +21,7 @@
 #endif
 
 #if PS2_DATA_PIN + 1 != PS2_CLOCK_PIN
-#    error PS/2 clock pin must be data pin + 1!
+#    error PS/2 Clock pin must be followed by data pin!
 #endif
 
 static inline void pio_serve_interrupt(void);

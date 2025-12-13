@@ -42,6 +42,7 @@
 #include "action_layer.h"
 #include "eeconfig.h"
 #include "bootloader.h"
+#include "bootmagic.h"
 #include "timer.h"
 #include "sync_timer.h"
 #include "gpio.h"
@@ -55,12 +56,6 @@
 #include "suspend.h"
 #include <stddef.h>
 #include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-#ifdef BOOTMAGIC_ENABLE
-#    include "bootmagic.h"
-#endif
 
 #ifdef DEFERRED_EXEC_ENABLE
 #    include "deferred_exec.h"
@@ -98,20 +93,30 @@ extern layer_state_t layer_state;
 #    include "process_music.h"
 #endif
 
+#if defined(BACKLIGHT_ENABLE) || defined(LED_MATRIX_ENABLE)
+#    include "process_backlight.h"
+#endif
+
 #ifdef LEADER_ENABLE
 #    include "leader.h"
+#    include "process_leader.h"
+#endif
+
+#ifdef UNICODE_ENABLE
+#    include "process_unicode.h"
+#endif
+
+#ifdef UCIS_ENABLE
+#    include "process_ucis.h"
+#endif
+
+#ifdef UNICODEMAP_ENABLE
+#    include "process_unicodemap.h"
 #endif
 
 #ifdef UNICODE_COMMON_ENABLE
 #    include "unicode.h"
-#endif
-
-#ifdef UCIS_ENABLE
-#    include "ucis.h"
-#endif
-
-#ifdef UNICODEMAP_ENABLE
-#    include "unicodemap.h"
+#    include "process_unicode_common.h"
 #endif
 
 #ifdef KEY_OVERRIDE_ENABLE
@@ -142,8 +147,24 @@ extern layer_state_t layer_state;
 #    include "process_space_cadet.h"
 #endif
 
+#ifdef MAGIC_KEYCODE_ENABLE
+#    include "process_magic.h"
+#endif
+
+#ifdef JOYSTICK_ENABLE
+#    include "process_joystick.h"
+#endif
+
 #ifdef PROGRAMMABLE_BUTTON_ENABLE
-#    include "programmable_button.h"
+#    include "process_programmable_button.h"
+#endif
+
+#ifdef GRAVE_ESC_ENABLE
+#    include "process_grave_esc.h"
+#endif
+
+#if defined(RGBLIGHT_ENABLE) || defined(RGB_MATRIX_ENABLE)
+#    include "process_rgb.h"
 #endif
 
 #ifdef HD44780_ENABLE
@@ -156,6 +177,7 @@ extern layer_state_t layer_state;
 
 #ifdef HAPTIC_ENABLE
 #    include "haptic.h"
+#    include "process_haptic.h"
 #endif
 
 #ifdef OLED_ENABLE
@@ -180,6 +202,7 @@ extern layer_state_t layer_state;
 
 #ifdef SECURE_ENABLE
 #    include "secure.h"
+#    include "process_secure.h"
 #endif
 
 #ifdef DYNAMIC_KEYMAP_ENABLE
@@ -214,10 +237,6 @@ extern layer_state_t layer_state;
 #    include "pointing_device.h"
 #endif
 
-#ifdef MOUSEKEY_ENABLE
-#    include "mousekey.h"
-#endif
-
 #ifdef CAPS_WORD_ENABLE
 #    include "caps_word.h"
 #    include "process_caps_word.h"
@@ -229,15 +248,12 @@ extern layer_state_t layer_state;
 
 #ifdef TRI_LAYER_ENABLE
 #    include "tri_layer.h"
+#    include "process_tri_layer.h"
 #endif
 
 #ifdef REPEAT_KEY_ENABLE
 #    include "repeat_key.h"
 #    include "process_repeat_key.h"
-#endif
-
-#ifdef OS_DETECTION_ENABLE
-#    include "os_detection.h"
 #endif
 
 void set_single_persistent_default_layer(uint8_t default_layer);
@@ -262,8 +278,8 @@ void     post_process_record_user(uint16_t keycode, keyrecord_t *record);
 void reset_keyboard(void);
 void soft_reset_keyboard(void);
 
-bool shutdown_kb(bool jump_to_bootloader);
-bool shutdown_user(bool jump_to_bootloader);
+void startup_user(void);
+void shutdown_user(void);
 
 void register_code16(uint16_t code);
 void unregister_code16(uint16_t code);

@@ -26,23 +26,20 @@ extern "C" {
 #endif
 
 extern report_keyboard_t *keyboard_report;
-#ifdef NKRO_ENABLE
-extern report_nkro_t *nkro_report;
-#endif
 
 void send_keyboard_report(void);
 
 /* key */
 inline void add_key(uint8_t key) {
-    add_key_to_report(key);
+    add_key_to_report(keyboard_report, key);
 }
 
 inline void del_key(uint8_t key) {
-    del_key_from_report(key);
+    del_key_from_report(keyboard_report, key);
 }
 
 inline void clear_keys(void) {
-    clear_keys_from_report();
+    clear_keys_from_report(keyboard_report);
 }
 
 /* modifier */

@@ -1,12 +1,12 @@
 name: Update feature branches after develop merge
 
-permissions:
-  contents: write
-
-on:
-  push:
-    branches:
-    - develop
+#permissions:
+#  contents: write
+#
+#on:
+#  push:
+#    branches:
+#    - develop
 
 jobs:
   feature_branch_update:
@@ -21,7 +21,7 @@ jobs:
         - riot
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
       with:
         token: ${{ secrets.QMK_BOT_TOKEN }}
         fetch-depth: 0

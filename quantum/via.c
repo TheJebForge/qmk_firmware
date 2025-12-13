@@ -24,6 +24,7 @@
 
 #include "via.h"
 
+#include "platforms/bootloader.h"
 #include "raw_hid.h"
 #include "dynamic_keymap.h"
 #include "eeprom.h"
@@ -394,6 +395,10 @@ void raw_hid_receive(uint8_t *data, uint8_t length) {
             break;
         }
 #endif
+        case id_bootloader_jump: {
+            bootloader_jump();
+            break;
+        }
         case id_dynamic_keymap_macro_get_count: {
             command_data[0] = dynamic_keymap_macro_get_count();
             break;
@@ -458,6 +463,10 @@ void raw_hid_receive(uint8_t *data, uint8_t length) {
 
     // Return the same buffer, optionally with values changed
     // (i.e. returning state to the host, or the unhandled state).
+    // Even when sending 32 bytes, it seems that the RP2040 receives only 31
+    // But tmk_core/protocol/chibios/usb_main.c refuses to send anything other than 32
+    // TODO: Figure out what's going on
+    length = 32;
     raw_hid_send(data, length);
 }
 
@@ -634,6 +643,11 @@ void via_qmk_rgblight_save(void) {
 
 #if defined(RGB_MATRIX_ENABLE)
 
+#    if !defined(RGB_MATRIX_MAXIMUM_BRIGHTNESS) || RGB_MATRIX_MAXIMUM_BRIGHTNESS > UINT8_MAX
+#        undef RGB_MATRIX_MAXIMUM_BRIGHTNESS
+#        define RGB_MATRIX_MAXIMUM_BRIGHTNESS UINT8_MAX
+#    endif
+
 void via_qmk_rgb_matrix_command(uint8_t *data, uint8_t length) {
     // data = [ command_id, channel_id, value_id, value_data ]
     uint8_t *command_id        = &(data[0]);
@@ -721,6 +735,11 @@ void via_qmk_rgb_matrix_save(void) {
 #endif // RGB_MATRIX_ENABLE
 
 #if defined(LED_MATRIX_ENABLE)
+
+#    if !defined(LED_MATRIX_MAXIMUM_BRIGHTNESS) || LED_MATRIX_MAXIMUM_BRIGHTNESS > UINT8_MAX
+#        undef LED_MATRIX_MAXIMUM_BRIGHTNESS
+#        define LED_MATRIX_MAXIMUM_BRIGHTNESS UINT8_MAX
+#    endif
 
 void via_qmk_led_matrix_command(uint8_t *data, uint8_t length) {
     // data = [ command_id, channel_id, value_id, value_data ]

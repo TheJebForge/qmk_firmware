@@ -33,15 +33,17 @@ def _generate_layouts(keyboard, kb_info_json):
         layout_keys = []
         layout_matrix = [['KC_NO'] * col_num for _ in range(row_num)]
 
-        for key_data in layout_data['layout']:
+        for index, key_data in enumerate(layout_data['layout']):
             row, col = key_data['matrix']
             identifier = f'k{ROW_LETTERS[row]}{COL_LETTERS[col]}'
-            if row >= row_num or col >= col_num:
-                cli.log.error(f'Skipping layouts due to {layout_name} containing invalid matrix values')
-                return []
 
-            layout_matrix[row][col] = identifier
-            layout_keys.append(identifier)
+            try:
+                layout_matrix[row][col] = identifier
+                layout_keys.append(identifier)
+            except IndexError:
+                key_name = key_data.get('label', identifier)
+                cli.log.error(f'{keyboard}/{layout_name}: Matrix data out of bounds at index {index} ({key_name}): [{row}, {col}]')
+                return []
 
         lines.append('')
         lines.append(f'#define {layout_name}({", ".join(layout_keys)}) {{ \\')

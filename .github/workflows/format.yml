@@ -1,7 +1,7 @@
 name: PR Lint Format
 
-permissions:
-  contents: read
+#permissions:
+#  contents: read
 
 on:
   pull_request:
@@ -25,7 +25,7 @@ jobs:
     - name: Disable safe.directory check
       run : git config --global --add safe.directory '*'
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
 
@@ -35,16 +35,14 @@ jobs:
 
     - name: Get changed files
       id: file_changes
-      uses: tj-actions/changed-files@v44
-      with:
-        use_rest_api: true
+      uses: tj-actions/changed-files@v37
 
     - name: Run qmk formatters
       shell: 'bash {0}'
       run: |
         echo '${{ steps.file_changes.outputs.added_files}}' '${{ steps.file_changes.outputs.modified_files}}' > ~/files_changed.txt
         qmk format-c --core-only $(< ~/files_changed.txt) || true
-        qmk format-python $(< ~/files_changed.txt) || true
+        #qmk format-python $(< ~/files_changed.txt) || true
         qmk format-text $(< ~/files_changed.txt) || true
 
     - name: Fail when formatting required

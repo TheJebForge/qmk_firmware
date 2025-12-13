@@ -1,4 +1,4 @@
-// Copyright 2024 QMK
+// Copyright 2023 QMK
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 /*******************************************************************************
@@ -26,8 +26,6 @@
 #pragma once
 #include "keycodes.h"
 // clang-format off
-
-#undef CH_H
 
 // Aliases
 #define CH_SECT KC_GRV  // §

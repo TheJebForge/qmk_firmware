@@ -1,12 +1,12 @@
 name: Update develop after master merge
 
-permissions:
-  contents: write
-
-on:
-  push:
-    branches:
-    - master
+#permissions:
+#  contents: write
+#
+#on:
+#  push:
+#    branches:
+#    - master
 
 jobs:
   develop_update:
@@ -15,7 +15,7 @@ jobs:
     if: github.repository == 'qmk/qmk_firmware'
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
       with:
         token: ${{ secrets.QMK_BOT_TOKEN }}
         fetch-depth: 0
